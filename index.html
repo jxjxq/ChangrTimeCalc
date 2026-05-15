@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f1f5f9" media="(prefers-color-scheme: light)">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.json">
+<title>电动自行车充电计算器</title>
+<style>
+:root{--bg:#0f172a;--card:rgba(30,41,59,.85);--card-border:rgba(148,163,184,.15);--input-bg:rgba(15,23,42,.9);--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--text4:#475569;--title:#38bdf8;--item-bg:rgba(15,23,42,.7);--item-bg2:rgba(15,23,42,.6)}
+@media(prefers-color-scheme:light){:root{--bg:#f1f5f9;--card:rgba(255,255,255,.9);--card-border:rgba(148,163,184,.3);--input-bg:rgba(241,245,249,.9);--text:#1e293b;--text2:#475569;--text3:#64748b;--text4:#94a3b8;--title:#0369a1;--item-bg:rgba(241,245,249,.8);--item-bg2:rgba(226,232,240,.7)}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;transition:background .3s,color .3s}
+.c{max-width:520px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:16px;margin-bottom:12px;transition:background .3s,border .3s}
+.ctitle{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer}
+input[type="range"].sp{background:linear-gradient(90deg,#1e40af,#7c3aed,#f59e0b)}
+input[type="range"].ss{background:linear-gradient(90deg,#dc2626,#f59e0b,#16a34a)}
+/* 加大触控热区，Android 更易点击 */
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 0 8px rgba(56,189,248,.6);cursor:pointer}
+input[type="range"]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 0 8px rgba(56,189,248,.6);cursor:pointer;border:none}
+.px{width:100%;background:var(--input-bg);border:1px solid var(--card-border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:15px}
+.pu{font-size:12px;color:var(--text3);min-width:32px;margin-left:4px}
+.pd{font-size:10px;color:var(--text4);margin-top:3px}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rc{background:var(--item-bg);border:1px solid var(--card-border);border-radius:10px;padding:12px;text-align:center}
+.rl{font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.rv{font-size:22px;font-weight:800;line-height:1.2}
+.ru{font-size:11px;color:var(--text2);margin-top:2px}
+.clb{color:#3b82f6}.cla{color:#fbbf24}.clg{color:#4ade80}.clr{color:#fb7185}
+.sg{margin-bottom:14px}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sl{font-size:13px;color:var(--text)}
+.sv{font-size:15px;font-weight:700;color:var(--title)}
+.sr{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:3px}
+.btn-group{display:flex;gap:8px;margin-bottom:10px}
+.btn{width:40px;height:40px;background:var(--item-bg);border:1px solid var(--card-border);border-radius:8px;color:var(--text);font-size:20px;cursor:pointer;text-align:center;line-height:36px;transition:background .3s,border .3s,color .3s}
+.btn:hover{background:rgba(56,189,248,.15);border-color:#38bdf8;color:#38bdf8}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pi{background:var(--item-bg);border:1px solid var(--card-border);border-radius:10px;padding:10px 12px}
+.pl{font-size:11px;color:var(--text3);margin-bottom:4px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.info-item{background:var(--item-bg2);border-radius:10px;padding:12px;text-align:center}
+.info-label{font-size:10px;color:var(--text3);text-transform:uppercase}
+.info-value{font-size:16px;font-weight:700;color:var(--text);margin-top:4px}
+.time-warn{color:#fbbf24!important}
+.time-danger{color:#fb7185!important}
+
+</style>
+</head>
+<body>
+<div class="c">
+
+<div class="card">
+  <div class="ctitle">充电统计</div>
+  <div class="rg">
+    <div class="rc">
+      <div class="rl">电池充入电量</div>
+      <div class="rv clb" id="resEnergyNeed">--</div>
+      <div class="ru">Wh</div>
+    </div>
+    <div class="rc">
+      <div class="rl">电网总耗电</div>
+      <div class="rv cla" id="resTotalEnergy">--</div>
+      <div class="ru">kWh</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ctitle" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span>里程/电量</span>
+    <span style="display:flex;gap:8px;text-transform:none;letter-spacing:0;font-weight:400">
+      <span style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text3)">剩余<input type="number" id="remKm" value="0" min="0" step="1" style="width:56px;background:var(--input-bg);border:1px solid var(--card-border);border-radius:4px;padding:3px 4px;color:var(--text);font-size:13px;text-align:right">km</span>
+      <span style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text3)">已行<input type="number" id="drivenKm" min="0" step="1" style="width:56px;background:var(--input-bg);border:1px solid var(--card-border);border-radius:4px;padding:3px 4px;color:var(--text);font-size:13px;text-align:right">km</span>
+    </span>
+  </div>
+  <div class="sg" style="margin-top:0">
+    <div class="sh"><span class="sl">当前电量 (SOC)</span><span class="sv" id="socSliderDisplay">0%</span></div>
+    <input type="range" id="socSlider" class="ss" min="0" max="100" value="0" step="1">
+    <div class="sr"><span>0%</span><span>100%</span></div>
+  </div>
+  <div class="sg">
+    <div class="sh"><span class="sl">充电目标</span><span class="sv" id="targetSocDisplay">100%</span></div>
+    <input type="range" id="targetSocSlider" class="ss" min="0" max="100" value="100" step="1" style="background:linear-gradient(90deg,#16a34a,#22c55e)">
+    <div class="sr"><span>0%</span><span>100%</span></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ctitle" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span>功率/时长</span>
+    <span style="font-size:11px;color:var(--text2);text-transform:none;letter-spacing:0;font-weight:400">实际电流   AC <span style="font-weight:700;color:#fbbf24" id="currentInDisplay">-- A</span> DC <span style="font-weight:700;color:#38bdf8" id="currentOutDisplay">-- A</span></span>
+  </div>
+
+  <div class="sg" style="margin-bottom:10px">
+    <div class="sh">
+      <span class="sl">充电设定值</span>
+      <span style="font-size:15px;font-weight:700;color:#38bdf8" id="currentBarDisplay">3.9 A</span>
+      <div class="btn-group" style="margin-bottom:0">
+        <button class="btn" id="currentMinus">−</button>
+        <button class="btn" id="currentPlus">+</button>
+      </div>
+    </div>
+    <input type="range" id="currentBar" class="sp" min="2" max="30" value="3.9" step="0.1" style="background:linear-gradient(90deg,#059669,#38bdf8)">
+    <div class="sr"><span>2 A</span><span>30 A</span></div>
+  </div>
+
+  <div class="sg" style="margin-bottom:10px">
+    <div class="sh"><span class="sl">充电时长</span><span class="sv" id="timeDisplay">-- 分钟</span> <span id="timeFeasibility" style="font-size:12px;font-weight:600"></span></div>
+  </div>
+
+  <div class="info-grid" style="margin-top:0">
+    <div class="info-item">
+      <div class="info-label">AC 输入功率</div>
+      <div class="info-value" id="powerInDisplay">-- W</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">DC 输出功率</div>
+      <div class="info-value" id="powerOutDisplay">-- W</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ctitle">参数调节</div>
+  <div class="pg">
+    <div class="pi">
+      <div class="pl">充电器效率</div>
+      <div style="display:flex;align-items:center"><input type="number" id="efficiency" value="96" min="50" max="100" step="1" class="px"><span class="pu">%</span></div>
+      <div class="pd">AC → DC 转换效率</div>
+    </div>
+    <div class="pi">
+      <div class="pl">充电器功耗</div>
+      <div style="display:flex;align-items:center"><input type="number" id="fixedLoss" value="30" min="0" max="100" step="0.5" class="px"><span class="pu">W</span></div>
+      <div class="pd">灯+板+风扇</div>
+    </div>
+    <div class="pi">
+      <div class="pl">最高充电电压</div>
+      <div style="display:flex;align-items:center"><input type="number" id="maxChargeV" value="86" min="50" max="150" step="0.1" class="px"><span class="pu">V</span></div>
+      <div class="pd">满电截止电压</div>
+    </div>
+    <div class="pi">
+      <div class="pl">充电电压</div>
+      <div style="display:flex;align-items:center"><input type="number" id="chargeV" value="79.8" min="50" max="150" step="0.1" class="px"><span class="pu">V</span></div>
+      <div class="pd">恒流阶段实际电压</div>
+    </div>
+    <div class="pi">
+      <div class="pl">充电器校正</div>
+      <div style="display:flex;align-items:center"><input type="number" id="chargerCorrection" value="-5" min="-20" max="20" step="1" class="px"><span class="pu">%</span></div>
+      <div class="pd">标称值与实际偏差</div>
+    </div>
+    <div class="pi">
+      <div class="pl">每公里耗电</div>
+      <div style="display:flex;align-items:center"><input type="number" id="whPerKm" value="20.5" min="5" max="50" step="0.5" class="px"><span class="pu">Wh/km</span></div>
+      <div class="pd">实际行驶能耗</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="ctitle">电池详情</div>
+  <div class="pg">
+    <div class="pi">
+      <div class="pl">电芯电压</div>
+      <div style="display:flex;align-items:center"><input type="number" id="cellVoltage" value="3.2" min="3" max="4.2" step="0.1" class="px"><span class="pu">V</span></div>
+      <div class="pd">磷酸铁锂 3.2V / 锂电池 3.7V</div>
+    </div>
+    <div class="pi">
+      <div class="pl">电芯数（串联）</div>
+      <div style="display:flex;align-items:center"><input type="number" id="cellCount" value="24" min="3" max="32" step="1" class="px"><span class="pu">S</span></div>
+      <div class="pd" id="derivedTotalV">总电压 76.8 V</div>
+    </div>
+    <div class="pi">
+      <div class="pl">电芯容量</div>
+      <div style="display:flex;align-items:center"><input type="number" id="cellAh" value="37.5" min="1" max="100" step="0.1" class="px"><span class="pu">Ah</span></div>
+      <div class="pd" id="derivedWh">容量 2880 Wh</div>
+    </div>
+    <div class="pi">
+      <div class="pl">电池效率</div>
+      <div style="display:flex;align-items:center"><input type="number" id="batteryEfficiency" value="82" min="50" max="100" step="1" class="px"><span class="pu">%</span></div>
+      <div class="pd">充电化学损耗</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function clamp(v,mn,mx){return Math.max(mn,Math.min(mx,v));}
+
+function getP(){
+  var socVal=parseFloat(document.getElementById('socSlider').value);
+  var tSocVal=parseFloat(document.getElementById('targetSocSlider').value);
+  return{
+    cellV:parseFloat(document.getElementById('cellVoltage').value)||3.7,
+    cellN:parseInt(document.getElementById('cellCount').value)||13,
+    cellAh:parseFloat(document.getElementById('cellAh').value)||13,
+    maxChargeV:parseFloat(document.getElementById('maxChargeV').value)||86,
+    chargeV:parseFloat(document.getElementById('chargeV').value)||79.8,
+    chargerEff:(parseFloat(document.getElementById('efficiency').value)||95)/100,
+    fLoss:parseFloat(document.getElementById('fixedLoss').value)||50,
+    batteryEff:(parseFloat(document.getElementById('batteryEfficiency').value)||82)/100,
+    chargerCorrection:parseFloat(document.getElementById('chargerCorrection').value)||-4,
+    soc:isNaN(socVal)?50:socVal,
+    tSoc:isNaN(tSocVal)?100:tSocVal
+  };
+}
+
+function deriv(p){
+  p.tV=p.cellV*p.cellN;
+  p.tWh=p.tV*p.cellAh;
+  var whKm=parseFloat(document.getElementById('whPerKm').value)||20;
+  p.tRange=p.tWh/whKm;
+  p.deltaSoc=Math.max(0,p.tSoc-p.soc);
+  p.batteryNeedWh=p.tWh*p.deltaSoc/100;
+  return p;
+}
+
+function recalculate(){
+  var p=getP();
+  deriv(p);
+
+  document.getElementById('derivedTotalV').textContent='总电压 '+p.tV.toFixed(1)+' V';
+  document.getElementById('derivedWh').textContent='容量 '+p.tWh.toFixed(0)+' Wh';
+
+  var dcI=clamp(parseFloat(document.getElementById('currentBar').value),2,30);
+  document.getElementById('currentBar').value=dcI;
+
+  // 应用充电器校正：校正后电流 = 标称电流 × (1 + 校正%/100)
+  var correctedDcI=dcI*(1+p.chargerCorrection/100);
+  correctedDcI=clamp(correctedDcI,0.5,30);
+
+  // DC输出功率 = 校正后电流 × 充电电压（恒流阶段实际电压）
+  var chargerOutputW=correctedDcI*p.chargeV;
+  // AC输入功率 = (DC输出 + 固定损耗) / 充电器效率
+  var powerW=Math.round((chargerOutputW+p.fLoss)/p.chargerEff);
+  powerW=clamp(powerW,100,3000);
+
+  var tSeconds_exact=0;
+  if(p.batteryNeedWh<=0){
+    tSeconds_exact=0;
+  } else {
+    // 实际进入电池的功率 = DC输出功率 × 电池效率
+    var batteryChargePower=chargerOutputW*p.batteryEff;
+    if(batteryChargePower<=0){
+      tSeconds_exact=Infinity;
+    } else {
+      tSeconds_exact=p.batteryNeedWh/batteryChargePower*3600;
+    }
+  }
+
+  var feasible=tSeconds_exact!==Infinity&&tSeconds_exact>0&&tSeconds_exact<86400;
+  var tMin=Math.round(tSeconds_exact/60);
+
+  document.getElementById('currentInDisplay').textContent=(powerW/220).toFixed(1)+' A';
+  document.getElementById('currentOutDisplay').textContent=correctedDcI.toFixed(1)+' A';
+  document.getElementById('currentBarDisplay').textContent=dcI.toFixed(1)+' A';
+
+  var timeEl=document.getElementById('timeDisplay');
+  var timeFeasEl=document.getElementById('timeFeasibility');
+  
+  if(p.deltaSoc<=0){
+    timeEl.textContent='已充满';
+    timeEl.classList.remove('time-warn','time-danger');
+    timeFeasEl.textContent='✓ 已达到目标电量';
+    timeFeasEl.style.color='#4ade80';
+    document.getElementById('resEnergyNeed').textContent='0';
+    document.getElementById('resTotalEnergy').textContent='0.00';
+  } else if(!feasible||tMin>1200){
+    timeEl.textContent='超过 20 小时';
+    timeEl.classList.remove('time-warn');
+    timeEl.classList.add('time-danger');
+    timeFeasEl.textContent='⚠ 长时间均衡，请注意检查温度';
+    timeFeasEl.style.color='#fb7185';
+    document.getElementById('resEnergyNeed').textContent=p.batteryNeedWh.toFixed(1);
+    var estSeconds=1200*60;
+    var chargerOutputWh=p.batteryNeedWh/p.batteryEff;
+    var gridWh=chargerOutputWh/p.chargerEff+p.fLoss*estSeconds/3600;
+    document.getElementById('resTotalEnergy').textContent='≥'+(gridWh/1000).toFixed(2);
+  } else {
+    var tHours=Math.floor(tMin/60);
+    var tRemainMin=tMin%60;
+    timeEl.textContent=(tHours>0?tHours+' 时 ':'')+tRemainMin+' 分';
+    timeEl.classList.remove('time-danger','time-warn');
+    if(tMin>960) timeEl.classList.add('time-danger');
+    else if(tMin>480) timeEl.classList.add('time-warn');
+    
+    // 按充电时长分档提示
+    if(tMin>480){
+      timeFeasEl.textContent='⏳均衡';
+      timeFeasEl.style.color='#a78bfa';
+    } else if(tMin>240){
+      timeFeasEl.textContent='✓正常';
+      timeFeasEl.style.color='#4ade80';
+    } else if(tMin>120){
+      timeFeasEl.textContent='✓快充';
+      timeFeasEl.style.color='#38bdf8';
+    } else {
+      timeFeasEl.textContent='⚡闪充';
+      timeFeasEl.style.color='#f97316';
+    }
+    
+    var chargerOutputWh=p.batteryNeedWh/p.batteryEff;
+    var gridWh=chargerOutputWh/p.chargerEff+p.fLoss*tSeconds_exact/3600;
+    document.getElementById('resEnergyNeed').textContent=p.batteryNeedWh.toFixed(1);
+    document.getElementById('resTotalEnergy').textContent=(gridWh/1000).toFixed(2);
+  }
+
+  document.getElementById('powerInDisplay').textContent=powerW+' W';
+  document.getElementById('powerOutDisplay').textContent=Math.round(chargerOutputW)+' W';
+
+  // 只在拖动 SOC 滑块时才回写 remKm/drivenKm
+  if(recalculate._socTriggered){
+    var totalRange=p.tRange;
+    var remKm=Math.round(p.soc/100*totalRange);
+    var drivenKm=Math.round((100-p.soc)/100*totalRange);
+    document.getElementById('remKm').value=remKm;
+    document.getElementById('drivenKm').value=drivenKm;
+    recalculate._socTriggered=false;
+  }
+
+  document.getElementById('socSliderDisplay').textContent=p.soc+'%';
+  document.getElementById('targetSocDisplay').textContent=p.tSoc+'%';
+}
+
+document.getElementById('currentBar').addEventListener('input',recalculate);
+document.getElementById('currentMinus').addEventListener('click',function(){
+  var bar=document.getElementById('currentBar');
+  bar.value=clamp(parseFloat(bar.value)-0.1,2,30);
+  recalculate();
+});
+document.getElementById('currentPlus').addEventListener('click',function(){
+  var bar=document.getElementById('currentBar');
+  bar.value=clamp(parseFloat(bar.value)+0.1,2,30);
+  recalculate();
+});
+
+document.getElementById('socSlider').addEventListener('input',function(){
+  document.getElementById('socSliderDisplay').textContent=this.value+'%';
+  recalculate._socTriggered=true;
+  recalculate();
+});
+document.getElementById('targetSocSlider').addEventListener('input',function(){
+  document.getElementById('targetSocDisplay').textContent=this.value+'%';
+  recalculate();
+});
+
+['cellVoltage','cellCount','cellAh','maxChargeV','chargeV','efficiency','fixedLoss','batteryEfficiency','whPerKm','chargerCorrection'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',recalculate);
+});
+
+// remKm/drivenKm 各自独立生效
+['remKm','drivenKm'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',function(e){
+    var p=getP();
+    deriv(p);
+    var totalRange=p.tRange;
+    var soc;
+    if(e.target.id==='remKm'){
+      var remVal=parseFloat(e.target.value)||0;
+      soc=Math.max(0,Math.min(100,Math.round(remVal/totalRange*100)));
+    } else {
+      var drivenVal=parseFloat(e.target.value)||0;
+      soc=Math.max(0,Math.min(100,Math.round((1-drivenVal/totalRange)*100)));
+    }
+    document.getElementById('socSlider').value=soc;
+    document.getElementById('socSliderDisplay').textContent=soc+'%';
+    recalculate();
+  });
+});
+
+// ── 参数持久化 ──────────────────────────────────────────
+var SAVE_IDS=['cellVoltage','cellCount','cellAh','maxChargeV','chargeV',
+  'efficiency','fixedLoss','batteryEfficiency','whPerKm','chargerCorrection',
+  'currentBar','socSlider','targetSocSlider'];
+
+function saveParams(){
+  var obj={};
+  SAVE_IDS.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) obj[id]=el.value;
+  });
+  localStorage.setItem('calcParams',JSON.stringify(obj));
+}
+
+function loadParams(){
+  var raw=localStorage.getItem('calcParams');
+  if(!raw) return;
+  try{
+    var obj=JSON.parse(raw);
+    SAVE_IDS.forEach(function(id){
+      if(obj[id]!==undefined){
+        var el=document.getElementById(id);
+        if(el) el.value=obj[id];
+      }
+    });
+  }catch(e){}
+}
+
+// 所有输入事件后追加保存
+(function(){
+  SAVE_IDS.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.addEventListener('input',saveParams);
+  });
+  // +/- 按钮也触发保存
+  document.getElementById('currentMinus').addEventListener('click',saveParams);
+  document.getElementById('currentPlus').addEventListener('click',saveParams);
+})();
+
+// 启动时读取已保存参数
+loadParams();
+// ────────────────────────────────────────────────────────
+
+recalculate._socTriggered=true;
+recalculate();
+
+  // 注册 Service Worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js');
+  }
+</script>
+</body>
+</html>
